@@ -25,16 +25,16 @@ class TechStoreSeeder extends Seeder
 
         // 1. Seed Technical Categories with Icons
         $categories = [
-            ['nama' => 'PC Rakitan', 'icon' => '🖥️'],
-            ['nama' => 'Laptop', 'icon' => '💻'],
-            ['nama' => 'MacBook & iMac', 'icon' => '🍎'],
-            ['nama' => 'Processor', 'icon' => '🔲'],
-            ['nama' => 'Graphic Card', 'icon' => '🎮'],
-            ['nama' => 'Memory (RAM)', 'icon' => '⚡'],
-            ['nama' => 'Storage', 'icon' => '💾'],
-            ['nama' => 'Motherboard', 'icon' => '🔌'],
-            ['nama' => 'Monitor', 'icon' => '📺'],
-            ['nama' => 'Aksesoris', 'icon' => '⌨️']
+            ['nama' => 'PC Rakitan', 'icon' => 'https://cdn-icons-png.flaticon.com/512/2493/2493301.png'],
+            ['nama' => 'Laptop', 'icon' => 'https://cdn-icons-png.flaticon.com/512/2493/2493307.png'],
+            ['nama' => 'MacBook & iMac', 'icon' => 'https://cdn-icons-png.flaticon.com/512/526/526951.png'],
+            ['nama' => 'Processor', 'icon' => 'https://cdn-icons-png.flaticon.com/512/984/984442.png'],
+            ['nama' => 'Graphic Card', 'icon' => 'https://cdn-icons-png.flaticon.com/512/11152/11152748.png'],
+            ['nama' => 'Memory (RAM)', 'icon' => 'https://cdn-icons-png.flaticon.com/512/11152/11152764.png'],
+            ['nama' => 'Storage', 'icon' => 'https://cdn-icons-png.flaticon.com/512/11153/11153084.png'],
+            ['nama' => 'Motherboard', 'icon' => 'https://cdn-icons-png.flaticon.com/512/908/908742.png'],
+            ['nama' => 'Monitor', 'icon' => 'https://cdn-icons-png.flaticon.com/512/3474/3474362.png'],
+            ['nama' => 'Aksesoris', 'icon' => 'https://cdn-icons-png.flaticon.com/512/3419/3419120.png']
         ];
         
         foreach ($categories as $cat) {

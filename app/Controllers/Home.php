@@ -7,28 +7,65 @@ class Home extends BaseController
     public function index($categoryId = null)
     {
         $productModel = new \App\Models\ProductModel();
+        $categoryModel = new \App\Models\CategoryModel();
         $query = $this->request->getGet('q');
         
-        $builder = $productModel->select('products.*, categories.nama_kategori')
-                               ->join('categories', 'categories.id = products.category_id');
+        $categories = $categoryModel->findAll();
         
-        // Category Filter
-        if ($categoryId) {
-            $builder->where('category_id', $categoryId);
+        if ($categoryId || $query) {
+            $builder = $productModel->select('products.*, categories.nama_kategori')
+                                   ->join('categories', 'categories.id = products.category_id');
+            
+            if ($categoryId) {
+                $builder->where('category_id', $categoryId);
+            }
+
+            if ($query) {
+                $builder->groupStart()
+                        ->like('nama_produk', $query)
+                        ->orLike('deskripsi', $query)
+                        ->orLike('spesifikasi', $query)
+                        ->orLike('categories.nama_kategori', $query)
+                        ->groupEnd();
+            }
+
+            $dbProducts = $builder->orderBy('id', 'DESC')->findAll();
+            
+            return view('index', [
+                'products' => $this->formatProducts($dbProducts),
+                'categories' => $categories,
+                'searchQuery' => $query,
+                'activeCategory' => $categoryId,
+                'groupedProducts' => null
+            ]);
         }
 
-        // Search Engine
-        if ($query) {
-            $builder->groupStart()
-                    ->like('nama_produk', $query)
-                    ->orLike('deskripsi', $query)
-                    ->orLike('spesifikasi', $query)
-                    ->orLike('categories.nama_kategori', $query)
-                    ->groupEnd();
+        // Default Landling: Grouped by Category
+        $groupedProducts = [];
+        foreach ($categories as $cat) {
+            $dbCatProducts = $productModel->where('category_id', $cat['id'])
+                                         ->orderBy('id', 'DESC')
+                                         ->findAll(10);
+            
+            if (!empty($dbCatProducts)) {
+                $groupedProducts[] = [
+                    'category' => $cat,
+                    'items' => $this->formatProducts($dbCatProducts)
+                ];
+            }
         }
 
-        $dbProducts = $builder->orderBy('id', 'RANDOM')->findAll(30);
+        return view('index', [
+            'products' => [], 
+            'categories' => $categories,
+            'searchQuery' => $query,
+            'activeCategory' => $categoryId,
+            'groupedProducts' => $groupedProducts
+        ]);
+    }
 
+    private function formatProducts($dbProducts)
+    {
         $products = [];
         foreach ($dbProducts as $p) {
             $products[] = [
@@ -42,16 +79,7 @@ class Home extends BaseController
                 'status' => $p['status']
             ];
         }
-
-        $categoryModel = new \App\Models\CategoryModel();
-        $categories = $categoryModel->findAll();
-
-        return view('index', [
-            'products' => $products,
-            'categories' => $categories,
-            'searchQuery' => $query,
-            'activeCategory' => $categoryId
-        ]);
+        return $products;
     }
 
     public function detail($id)

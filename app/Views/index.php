@@ -52,7 +52,9 @@
         .category-card { flex: 0 0 calc(12.5% - 0.9rem); min-width: 120px; background: #f8fafc; border-radius: 16px; padding: 1rem; text-align: center; transition: 0.3s; cursor: pointer; border: 2px solid transparent; }
         .category-card:hover { transform: translateY(-5px); background: white; box-shadow: 0 8px 20px rgba(0,0,0,0.08); border-color: var(--primary-light); }
         .category-card.active { border-color: var(--primary); background: var(--primary-light); }
-        .category-icon { font-size: 2.2rem; margin-bottom: 0.8rem; display: block; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+        .category-icon { margin-bottom: 0.8rem; display: flex; justify-content: center; align-items: center; height: 48px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+        .category-icon img { height: 100%; width: auto; object-fit: contain; }
+        .category-icon i, .category-icon span { font-size: 2.2rem; }
         .category-name { font-size: 0.85rem; font-weight: 700; color: var(--dark); line-height: 1.2; }
 
         .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; z-index: 10; border: none; font-size: 0.8rem; color: var(--secondary); }
@@ -169,8 +171,8 @@
                         <input type="text" name="nama_kategori" class="admin-input" placeholder="Misal: Processor" required style="width:100%;">
                     </div>
                     <div style="flex:1;">
-                        <label style="font-size: 0.7rem; font-weight: 800; color: #b91c1c; display: block; margin-bottom: 0.2rem;">ID ICON/EMOJI</label>
-                        <input type="text" name="icon" class="admin-input" placeholder="🖥️ atau fas fa-laptop" required style="width:100%;">
+                        <label style="font-size: 0.7rem; font-weight: 800; color: #b91c1c; display: block; margin-bottom: 0.2rem;">ICON (URL/EMOJI)</label>
+                        <input type="text" name="icon" class="admin-input" placeholder="URL Flaticon (PNG)" required style="width:100%;">
                     </div>
                     <button type="submit" class="btn-buy primary" style="background: #ef4444; height: 38px;">Simpan Kategori</button>
                 </form>
@@ -187,7 +189,13 @@
                 <div class="category-slider" id="categorySlider">
                     <?php foreach ($categories as $cat): ?>
                         <a href="/category/<?= $cat['id'] ?>" class="category-card <?= ($activeCategory == $cat['id']) ? 'active' : '' ?>">
-                            <span class="category-icon"><?= $cat['icon'] ?: '📦' ?></span>
+                            <div class="category-icon">
+                                <?php if (filter_var($cat['icon'], FILTER_VALIDATE_URL)): ?>
+                                    <img src="<?= $cat['icon'] ?>" alt="<?= $cat['nama_kategori'] ?>">
+                                <?php else: ?>
+                                    <span><?= $cat['icon'] ?: '📦' ?></span>
+                                <?php endif; ?>
+                            </div>
                             <p class="category-name"><?= $cat['nama_kategori'] ?></p>
                         </a>
                     <?php endforeach; ?>
@@ -197,79 +205,135 @@
         </section>
 
         <!-- Product Listing -->
-        <section class="section">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <?php 
-                        if ($activeCategory) {
-                            $catName = "Produk";
-                            foreach($categories as $c) if($c['id'] == $activeCategory) $catName = $c['nama_kategori'];
-                            echo $catName;
-                        } elseif ($searchQuery) {
-                            echo "Hasil: \"" . esc($searchQuery) . "\"";
-                        } else {
-                            echo "Rekomendasi Untukmu";
-                        }
-                    ?>
-                </h2>
-                <?php if ($activeCategory || $searchQuery): ?>
-                    <a href="/" style="font-size: 0.85rem; color: var(--primary); font-weight: 700; text-decoration: none;">Bersihkan Filter <i class="fas fa-times"></i></a>
-                <?php endif; ?>
-            </div>
-
-            <div class="product-grid">
-                <?php if (empty($products)): ?>
-                    <div style="grid-column: 1/-1; text-align: center; padding: 5rem 0;">
-                        <i class="fas fa-search" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1.5rem;"></i>
-                        <h3 style="color: #64748b;">Oops! Kami tidak menemukan apa yang kamu cari</h3>
-                        <p style="color: #94a3b8; margin-top: 0.5rem;">Coba gunakan kata kunci lain atau browse kategori utama kami.</p>
-                        <a href="/" class="btn-buy primary" style="display: inline-block; margin-top: 1.5rem; text-decoration: none;">Lihat Semua Produk</a>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($products as $p): 
-                        $isInactive = $p['status'] === 'inactive';
-                    ?>
-                    <div class="product-card" onclick="window.location.href='/product/<?= $p['id'] ?>'" style="<?= $isInactive ? 'opacity: 0.6; filter: grayscale(1);' : '' ?>">
-                        <div class="product-img">
-                            <img src="<?= $p['img'] ?>" alt="<?= $p['name'] ?>">
-                            <?php if ($isInactive): ?>
-                                <div style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); color:white; display:flex; align-items:center; justify-content:center; font-weight:800;">NON-AKTIF</div>
-                            <?php endif; ?>
+            <?php if (!empty($groupedProducts)): ?>
+                <?php foreach ($groupedProducts as $group): ?>
+                    <div style="margin-bottom: 4rem;">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <?php if (filter_var($group['category']['icon'], FILTER_VALIDATE_URL)): ?>
+                                    <img src="<?= $group['category']['icon'] ?>" style="height: 30px; width: auto; vertical-align: middle; margin-right: 0.5rem;">
+                                <?php endif; ?>
+                                <?= $group['category']['nama_kategori'] ?>
+                            </h2>
+                            <a href="/category/<?= $group['category']['id'] ?>" style="font-size: 0.85rem; color: var(--primary); font-weight: 700; text-decoration: none;">Lihat Semua <i class="fas fa-chevron-right"></i></a>
                         </div>
-                        <div class="product-info">
-                            <p class="product-name" title="<?= $p['name'] ?>"><?= $p['name'] ?></p>
-                            <p class="product-price"><?= $p['price'] ?></p>
-                            <div class="product-meta">
-                                <i class="fas fa-map-marker-alt"></i> Indonesia • <?= $p['location'] ?>
+                        <div class="product-grid">
+                            <?php foreach ($group['items'] as $p): 
+                                $isInactive = $p['status'] === 'inactive';
+                            ?>
+                            <div class="product-card" onclick="window.location.href='/product/<?= $p['id'] ?>'" style="<?= $isInactive ? 'opacity: 0.6; filter: grayscale(1);' : '' ?>">
+                                <div class="product-img">
+                                    <img src="<?= $p['img'] ?>" alt="<?= $p['name'] ?>">
+                                    <?php if ($isInactive): ?>
+                                        <div style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); color:white; display:flex; align-items:center; justify-content:center; font-weight:800;">NON-AKTIF</div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="product-info">
+                                    <p class="product-name" title="<?= $p['name'] ?>"><?= $p['name'] ?></p>
+                                    <p class="product-price"><?= $p['price'] ?></p>
+                                    <div class="product-meta">
+                                        <i class="fas fa-map-marker-alt"></i> Indonesia • <?= $p['location'] ?>
+                                    </div>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                                        <div class="product-rating"><i class="fas fa-star" style="color: #fbbf24;"></i> 4.9 (200+)</div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: auto;" onclick="event.stopPropagation()">
+                                        <?php if ($isInactive): ?>
+                                            <button class="btn-buy" disabled style="grid-column: span 2; background: #e2e8f0; color: #94a3b8;">Tidak Dijual</button>
+                                        <?php else: ?>
+                                            <button class="btn-buy ghost" onclick="handleBuyAction('cart', <?= $p['id'] ?>)"><i class="fas fa-cart-plus"></i></button>
+                                            <button class="btn-buy primary" onclick="handleBuyAction('buy', <?= $p['id'] ?>)">Beli</button>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <?php if (session()->get('role') === 'admin'): ?>
+                                        <div class="admin-tools" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0;">
+                                            <p style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.5px;">Admin Control</p>
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                                <button onclick="adminAction('block_shop', <?= $p['shop_id'] ?>)" class="admin-btn" title="Blokir Toko" style="background: #fee2e2; color: #ef4444; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-ban"></i> Blokir</button>
+                                                <button onclick="adminAction('warn_shop', <?= $p['shop_id'] ?>)" class="admin-btn" title="Beri Teguran" style="background: #fef3c7; color: #d97706; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-exclamation-triangle"></i> Tegur</button>
+                                                <button onclick="adminAction('delete_product', <?= $p['id'] ?>)" class="admin-btn" title="Hapus Produk" style="grid-column: span 2; background: #f1f5f9; color: #475569; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer; margin-top: 0.3rem;"><i class="fas fa-trash-alt"></i> Hapus Produk</button>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                                <div class="product-rating"><i class="fas fa-star" style="color: #fbbf24;"></i> 4.9 (200+)</div>
-                            </div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: auto;" onclick="event.stopPropagation()">
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+            <?php else: ?>
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <?php 
+                            if ($activeCategory) {
+                                $catName = "Produk";
+                                foreach($categories as $c) if($c['id'] == $activeCategory) $catName = $c['nama_kategori'];
+                                echo $catName;
+                            } elseif ($searchQuery) {
+                                echo "Hasil: \"" . esc($searchQuery) . "\"";
+                            }
+                        ?>
+                    </h2>
+                    <?php if ($activeCategory || $searchQuery): ?>
+                        <a href="/" style="font-size: 0.85rem; color: var(--primary); font-weight: 700; text-decoration: none;">Bersihkan Filter <i class="fas fa-times"></i></a>
+                    <?php endif; ?>
+                </div>
+
+                <div class="product-grid">
+                    <?php if (empty($products)): ?>
+                        <div style="grid-column: 1/-1; text-align: center; padding: 5rem 0;">
+                            <i class="fas fa-search" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1.5rem;"></i>
+                            <h3 style="color: #64748b;">Oops! Kami tidak menemukan apa yang kamu cari</h3>
+                            <p style="color: #94a3b8; margin-top: 0.5rem;">Coba gunakan kata kunci lain atau browse kategori utama kami.</p>
+                            <a href="/" class="btn-buy primary" style="display: inline-block; margin-top: 1.5rem; text-decoration: none;">Lihat Semua Produk</a>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($products as $p): 
+                            $isInactive = $p['status'] === 'inactive';
+                        ?>
+                        <div class="product-card" onclick="window.location.href='/product/<?= $p['id'] ?>'" style="<?= $isInactive ? 'opacity: 0.6; filter: grayscale(1);' : '' ?>">
+                            <div class="product-img">
+                                <img src="<?= $p['img'] ?>" alt="<?= $p['name'] ?>">
                                 <?php if ($isInactive): ?>
-                                    <button class="btn-buy" disabled style="grid-column: span 2; background: #e2e8f0; color: #94a3b8;">Tidak Dijual</button>
-                                <?php else: ?>
-                                    <button class="btn-buy ghost" onclick="handleBuyAction('cart', <?= $p['id'] ?>)"><i class="fas fa-cart-plus"></i></button>
-                                    <button class="btn-buy primary" onclick="handleBuyAction('buy', <?= $p['id'] ?>)">Beli</button>
+                                    <div style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); color:white; display:flex; align-items:center; justify-content:center; font-weight:800;">NON-AKTIF</div>
                                 <?php endif; ?>
                             </div>
-
-                            <?php if (session()->get('role') === 'admin'): ?>
-                                <div class="admin-tools" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0;">
-                                    <p style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.5px;">Admin Control</p>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                                        <button onclick="adminAction('block_shop', <?= $p['shop_id'] ?>)" class="admin-btn" title="Blokir Toko" style="background: #fee2e2; color: #ef4444; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-ban"></i> Blokir</button>
-                                        <button onclick="adminAction('warn_shop', <?= $p['shop_id'] ?>)" class="admin-btn" title="Beri Teguran" style="background: #fef3c7; color: #d97706; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-exclamation-triangle"></i> Tegur</button>
-                                        <button onclick="adminAction('delete_product', <?= $p['id'] ?>)" class="admin-btn" title="Hapus Produk" style="grid-column: span 2; background: #f1f5f9; color: #475569; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer; margin-top: 0.3rem;"><i class="fas fa-trash-alt"></i> Hapus Produk</button>
-                                    </div>
+                            <div class="product-info">
+                                <p class="product-name" title="<?= $p['name'] ?>"><?= $p['name'] ?></p>
+                                <p class="product-price"><?= $p['price'] ?></p>
+                                <div class="product-meta">
+                                    <i class="fas fa-map-marker-alt"></i> Indonesia • <?= $p['location'] ?>
                                 </div>
-                            <?php endif; ?>
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                                    <div class="product-rating"><i class="fas fa-star" style="color: #fbbf24;"></i> 4.9 (200+)</div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: auto;" onclick="event.stopPropagation()">
+                                    <?php if ($isInactive): ?>
+                                        <button class="btn-buy" disabled style="grid-column: span 2; background: #e2e8f0; color: #94a3b8;">Tidak Dijual</button>
+                                    <?php else: ?>
+                                        <button class="btn-buy ghost" onclick="handleBuyAction('cart', <?= $p['id'] ?>)"><i class="fas fa-cart-plus"></i></button>
+                                        <button class="btn-buy primary" onclick="handleBuyAction('buy', <?= $p['id'] ?>)">Beli</button>
+                                    <?php endif; ?>
+                                </div>
+
+                                <?php if (session()->get('role') === 'admin'): ?>
+                                    <div class="admin-tools" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0;">
+                                        <p style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.5px;">Admin Control</p>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                            <button onclick="adminAction('block_shop', <?= $p['shop_id'] ?>)" class="admin-btn" title="Blokir Toko" style="background: #fee2e2; color: #ef4444; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-ban"></i> Blokir</button>
+                                            <button onclick="adminAction('warn_shop', <?= $p['shop_id'] ?>)" class="admin-btn" title="Beri Teguran" style="background: #fef3c7; color: #d97706; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer;"><i class="fas fa-exclamation-triangle"></i> Tegur</button>
+                                            <button onclick="adminAction('delete_product', <?= $p['id'] ?>)" class="admin-btn" title="Hapus Produk" style="grid-column: span 2; background: #f1f5f9; color: #475569; border:none; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer; margin-top: 0.3rem;"><i class="fas fa-trash-alt"></i> Hapus Produk</button>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </section>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
     </main>
 
     <script>
